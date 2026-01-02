@@ -63,6 +63,9 @@
                 <h5 class="m-0"><i class="fas fa-chart-line me-2"></i>NHẬP LỆNH (HTF)</h5>
                 <div>
                     <small id="status-connect" class="badge bg-warning text-dark me-2"><i class="fas fa-sync fa-spin me-1"></i> Connecting...</small>
+                    <a href="./mau-hinh.html" class="btn btn-success btn-lg shadow rounded-3 px-4 fw-semibold">Mẫu hình</a>
+                    <a href="./thong-ke.html" class="btn btn-success btn-lg shadow rounded-3 px-4 fw-semibold">Thống kê</a>
+                   
                     <button class="btn btn-sm btn-light text-primary fw-bold me-1" onclick="openStatsModal()"><i class="fas fa-chart-pie me-1"></i> Thống kê</button>
                     <button class="btn btn-sm btn-light text-primary fw-bold" onclick="openHistoryModal()"><i class="fas fa-history me-1"></i> Lịch sử</button>
                 </div>
@@ -85,7 +88,9 @@
                         <div class="col-md-3"><input type="url" class="form-control form-control-sm mb-1" name="m15" placeholder="Link ảnh M15..." oninput="preview(this)"><img class="img-preview" onclick="openSingleImage(this)"></div>
                     </div>
                     <div class="row g-3 mb-3">
-                        <div class="col-md-6"><label class="form-label">Cảm nhận & Góc nhìn</label><textarea class="form-control mb-2" name="cam_nhan" rows="2"></textarea><textarea class="form-control" name="CainhinHTFvsLTF" rows="2"></textarea></div>
+                        <div class="col-md-6"><label class="form-label">Cảm nhận & Góc nhìn</label><textarea class="form-control mb-2" name="cam_nhan" rows="2"></textarea>
+                            <label class="form-label">Cái nhìn HTF (H4 + cây D1) và TF 15m có thuận nhau?</label>
+                            <textarea class="form-control" name="CainhinHTFvsLTF" rows="2"></textarea></div>
                         <div class="col-md-6">
                             <div class="row g-2">
                                 <div class="col-md-6"><label class="form-label">Kết quả (Auto)</label><select class="form-select" name="ketqua" id="ketquaSelect"><option value="">-- Auto --</option></select></div>
