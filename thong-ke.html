@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Journal Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class', /* Kích hoạt chế độ Dark Mode bằng class */
+            theme: { 
+                extend: { 
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] }
+                } 
+            }
+        }
+    </script>
+    <style>
+        /* --- CẤU HÌNH CSS CƠ BẢN --- */
+        body { 
+            /* Xóa màu cứng, để Tailwind lo việc này */
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Chỉ hiện Gradient nền ở chế độ Dark */
+        .dark body {
+            background-image: radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%), 
+                              radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.08), transparent 25%);
+        }
+
+        /* --- GLASS CARD (LIGHT MODE - Mặc định) --- */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.7); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); 
+            border: 1px solid rgba(0, 0, 0, 0.05); 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            color: #18181b;
+        }
+
+        /* --- GLASS CARD (DARK MODE) --- */
+        .dark .glass-card {
+            background: rgba(24, 24, 27, 0.6); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            color: #e4e4e7;
+        }
+        
+        /* --- ACTIVE CARD (Khi có nhiều Block) --- */
+        /* Light Mode */
+        .glass-card-active {
+            background: linear-gradient(145deg, #ffffff 0%, #eff6ff 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+        }
+        /* Dark Mode Override */
+        .dark .glass-card-active {
+            background: linear-gradient(86deg, rgb(27 27 24 / 90%) 0%, rgb(30 67 138 / 15%) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* --- TRADING BOXES --- */
+        .grad-win { background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); border: 1px solid rgba(16, 185, 129, 0.5); color: white; }
+        .grad-loss { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.5); color: white; }
+        .grad-be { background: linear-gradient(135deg, #64748b 0%, #475569 100%); border: 1px solid rgba(148, 163, 184, 0.2); color: white; }
+        
+        .trade-box { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }
+        .trade-box:hover { transform: scale(1.1) translateY(-2px); z-index: 10; }
+        
+        /* Box Empty - Light Mode */
+        .box-empty { border: 1px dashed #d4d4d8; background: rgba(0,0,0,0.02); color: transparent; cursor: default; }
+        /* Box Empty - Dark Mode */
+        .dark .box-empty { border: 1px dashed #3f3f46; background: rgba(255,255,255,0.02); }
+
+        .loader { width: 24px; height: 24px; border: 3px solid #3b82f6; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-zinc-100 dark:bg-[#09090b] text-zinc-800 dark:text-zinc-200 transition-colors duration-300 p-4 md:p-8">
+
+    <script> const API_URL = "https://script.google.com/macros/s/AKfycbxL2PFm94oGoxwenvWkEIfRE2p9ZPuatQPoMfmsj8F_p4CQw_cbZpz0WzPU2QNAptZKOQ/exec"; </script>
+
+    <div class="max-w-7xl mx-auto space-y-8">
+        
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-chart-simple text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Trading Dashboard</h1>
+                    <div class="flex items-center gap-2 text-xs font-mono text-zinc-500 dark:text-zinc-400">
+                        <span class="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-green-600 dark:text-green-400 font-bold">WIN > 10</span>
+                        <span class="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-500 dark:text-zinc-400 font-bold">BE 0-10</span>
+                    </div>
+                </div>
+            </div>
+            <p class="text-align-center text-zinc-400 text-3lx dark:text-emerald-200">Muốn hái trái ngọt <i class="fa-solid fa-plant-wilt"></i> thì phải <i class="fa-solid fa-person-digging"></i></p>
+            <div class="flex items-center gap-3">
+                 <button onclick="toggleTheme()" class="glass-card w-11 h-11 rounded-xl text-yellow-500 hover:text-white hover:bg-yellow-500 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-700 transition flex items-center justify-center shadow-lg active:scale-95">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-blue-500"><i class="fa-solid fa-filter"></i></div>
+                    <select id="money-filter" onchange="resetAndRender()" class="appearance-none glass-card text-sm font-bold pl-10 pr-10 py-3 rounded-xl outline-none focus:border-blue-500 hover:bg-black/5 dark:hover:bg-zinc-800/50 transition cursor-pointer min-w-[180px]">
+                        <option value="all">Tất cả Dòng tiền</option>
+                    </select>
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500"><i class="fa-solid fa-chevron-down text-xs"></i></div>
+                </div>
+
+                <button onclick="loadData()" class="glass-card w-11 h-11 rounded-xl text-blue-500 hover:text-white hover:bg-blue-600 transition flex items-center justify-center shadow-lg active:scale-95 group">
+                    <i id="loading-icon" class="fa-solid fa-rotate group-hover:rotate-180 transition duration-700"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20"></div>
+        
+        <div id="initial-loading" class="flex flex-col items-center justify-center py-32 opacity-0 animate-[fadeIn_0.5s_forwards]">
+            <span class="loader mb-4"></span>
+            <span class="text-zinc-500 text-sm font-medium animate-pulse">Đang tải dữ liệu...</span>
+        </div>
+    </div>
+
+    <div id="detailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-zinc-200/80 dark:bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        <div class="bg-white dark:bg-[#09090b] w-full max-w-6xl h-[90vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col relative border border-zinc-200 dark:border-zinc-800 animate-[scaleIn_0.3s_cubic-bezier(0.16,1,0.3,1)]">
+            
+            <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-900/50">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700"><i class="fa-solid fa-layer-group text-blue-500"></i></div>
+                    <div>
+                        <h2 id="m-pattern" class="text-lg font-bold text-zinc-900 dark:text-white leading-tight">Setup Name</h2>
+                        <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-0.5"><span id="m-time">--:--</span> <span class="text-blue-500 font-bold ml-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-900/30" id="m-money-badge">USD</span></div>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center border border-zinc-200 dark:border-zinc-700"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="flex flex-1 overflow-hidden flex-col lg:flex-row">
+                <div class="lg:w-3/4 flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-[#050505] relative">
+                    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-white/90 dark:bg-zinc-900/90 backdrop-blur border border-zinc-200 dark:border-zinc-700 p-1 rounded-xl shadow-xl flex gap-1">
+                        <button onclick="switchImage('d1')" id="tab-d1" class="img-tab">D1</button>
+                        <button onclick="switchImage('h4')" id="tab-h4" class="img-tab">H4</button>
+                        <button onclick="switchImage('h1')" id="tab-h1" class="img-tab">H1</button>
+                        <button onclick="switchImage('m15')" id="tab-m15" class="img-tab">M15</button>
+                        <button onclick="switchImage('entry')" id="tab-entry" class="img-tab-active">Entry</button>
+                    </div>
+                    <div class="flex-1 flex items-center justify-center p-4 overflow-hidden relative group">
+                        <img id="m-display-img" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl hidden transition-opacity duration-300">
+                        <div id="m-no-img" class="text-center text-zinc-400 dark:text-zinc-600 hidden"><i class="fa-regular fa-image text-5xl mb-3 opacity-50"></i><p class="text-sm font-medium">Không có ảnh</p></div>
+                        <a id="m-link-img" href="#" target="_blank" class="absolute bottom-6 right-6 bg-white dark:bg-zinc-800 hover:bg-blue-600 hover:text-white text-zinc-600 dark:text-white p-3 rounded-full shadow-lg border border-zinc-200 dark:border-zinc-700 transition transform scale-0 group-hover:scale-100 duration-200"><i class="fa-solid fa-expand"></i></a>
+                    </div>
+                </div>
+
+                <div class="lg:w-1/4 flex flex-col bg-zinc-50 dark:bg-zinc-900/50 overflow-y-auto">
+                    <div class="p-6 border-b border-zinc-200 dark:border-zinc-800">
+                        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex justify-between items-center shadow-sm">
+                            <div class="text-center"><div class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Kết quả</div><div id="m-result" class="text-xl font-black font-mono">--</div></div>
+                            <div class="w-px h-8 bg-zinc-200 dark:bg-zinc-800"></div>
+                            <div class="text-center"><div class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">Pips</div><div id="m-pips" class="text-xl font-black font-mono">--</div></div>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-8">
+                        <div><h3 class="text-xs font-bold text-blue-600 dark:text-blue-500 uppercase mb-3 flex items-center gap-2"><i class="fa-solid fa-pen-nib"></i> Diễn biến</h3><div id="m-dienbien" class="text-sm text-zinc-600 dark:text-zinc-300 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 leading-relaxed font-light shadow-sm">...</div></div>
+                        <div><h3 class="text-xs font-bold text-yellow-600 dark:text-yellow-500 uppercase mb-3 flex items-center gap-2"><i class="fa-solid fa-lightbulb"></i> Bài học</h3><div id="m-baihoc" class="text-sm text-zinc-600 dark:text-zinc-300 bg-yellow-50 dark:bg-yellow-500/5 p-4 rounded-xl border border-yellow-200 dark:border-yellow-500/10 leading-relaxed font-light shadow-sm">...</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .img-tab { @apply px-4 py-1.5 rounded-lg text-xs font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 transition; }
+        .img-tab-active { @apply px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition transform scale-105; }
+    </style>
+
+    <script>
+        let globalData = [];
+        let currentTrade = {};
+        let blockState = {}; 
+
+        // --- THEME LOGIC ---
+        function initTheme() {
+            // Ưu tiên localStorage -> Sau đó đến cấu hình máy (System Preference)
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            updateThemeIcon();
+        }
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) { 
+                html.classList.remove('dark'); 
+                localStorage.setItem('theme', 'light'); 
+            } else { 
+                html.classList.add('dark'); 
+                localStorage.setItem('theme', 'dark'); 
+            }
+            updateThemeIcon();
+        }
+        function updateThemeIcon() {
+            const icon = document.getElementById('theme-icon');
+            if (document.documentElement.classList.contains('dark')) {
+                icon.className = "fa-solid fa-moon text-lg";
+            } else {
+                icon.className = "fa-solid fa-sun text-lg";
+            }
+        }
+        initTheme(); // Chạy ngay lập tức
+        window.onload = loadData;
+
+        // --- DATA LOGIC ---
+        function loadData() {
+            document.getElementById('loading-icon').classList.add('animate-spin');
+            fetch(API_URL + "?mode=history").then(r => r.json()).then(data => {
+                globalData = data;
+                populateMoneyFilter(data);
+                resetAndRender();
+                document.getElementById('initial-loading').classList.add('hidden');
+            }).catch(e => alert("Lỗi tải data: " + e)).finally(() => document.getElementById('loading-icon').classList.remove('animate-spin'));
+        }
+
+        function populateMoneyFilter(data) {
+            const select = document.getElementById('money-filter');
+            const moneys = [...new Set(data.map(i => i.money ? String(i.money).trim() : "").filter(m => m !== ""))].sort();
+            select.innerHTML = '<option value="all">Tất cả Dòng tiền</option>';
+            moneys.forEach(m => select.innerHTML += `<option value="${m}">${m}</option>`);
+        }
+
+        function resetAndRender() { blockState = {}; renderGrid(); }
+
+        function renderGrid() {
+            const container = document.getElementById('dashboard-grid');
+            container.innerHTML = '';
+            
+            const filterMoney = document.getElementById('money-filter').value;
+            let data = globalData;
+            if (filterMoney !== 'all') data = globalData.filter(d => String(d.money).trim() === filterMoney);
+            
+            if (!data.length) { container.innerHTML = `<div class="col-span-full text-center text-zinc-500 py-20 italic font-medium">Không có dữ liệu phù hợp.</div>`; return; }
+
+            const groups = {};
+            data.forEach(item => {
+                let key = item.pattern ? (item.pattern.charAt(0).toUpperCase() + item.pattern.slice(1)) : "Khác";
+                if(!groups[key]) groups[key] = [];
+                groups[key].push(item);
+            });
+
+            Object.keys(groups).sort().forEach(key => {
+                const currentPage = blockState[key] || 0;
+                const allTrades = groups[key];
+                const totalBlocks = Math.ceil(allTrades.length / 10);
+                const startIndex = currentPage * 10;
+                const trades = allTrades.slice(startIndex, startIndex + 10);
+                
+                // Logic nền đặc biệt cho Setup nhiều lệnh
+                const hasManyBlocks = totalBlocks > 1;
+                const cardClass = hasManyBlocks ? "glass-card-active" : "glass-card";
+
+                let htmlBoxes = '';
+                let wins = 0, totalPips = 0;
+
+                trades.forEach(t => {
+                    let pips = parseFloat(t.pips) || 0;
+                    let cls = 'grad-loss', txt = 'L', res = 'LOSS';
+                    if (pips > 10) { cls = 'grad-win'; txt = 'W'; res = 'WIN'; wins++; } 
+                    else if (pips > 0 && pips <= 10) { cls = 'grad-be'; txt = 'B'; res = 'BE'; }
+                    totalPips += pips; t.calcRes = res; 
+                    const safeJson = JSON.stringify(t).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                    htmlBoxes += `<div onclick='openModal(${safeJson})' class="trade-box ${cls}" title="${pips} pips"><span class="drop-shadow-sm">${txt}</span></div>`;
+                });
+
+                for(let i = trades.length; i < 10; i++) htmlBoxes += `<div class="trade-box box-empty">-</div>`;
+
+                const wr = trades.length > 0 ? Math.round((wins/trades.length)*100) : 0;
+                const pColor = totalPips > 0 ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500';
+                const isFirst = currentPage === 0;
+                const isLast = currentPage >= totalBlocks - 1;
+
+                container.innerHTML += `
+                    <div class="${cardClass} rounded-2xl p-6 transition duration-500 flex flex-col h-full animate-[fadeIn_0.5s_ease-out]">
+                        <div class="flex justify-between items-start mb-5">
+                            <div>
+                                <h3 class="font-bold text-zinc-900 dark:text-white text-lg truncate w-40" title="${key}">${key}</h3>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <div class="flex items-center bg-zinc-100 dark:bg-zinc-900/50 rounded-lg p-0.5 border border-zinc-200 dark:border-zinc-700/50 shadow-inner">
+                                        <button onclick="changeBlock('${key}', -1)" ${isFirst ? 'disabled' : ''} class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent transition"><i class="fa-solid fa-chevron-left text-[10px]"></i></button>
+                                        <span class="text-[10px] font-bold px-2 text-blue-600 dark:text-blue-400 min-w-[60px] text-center font-mono tracking-tight">BLOCK ${currentPage + 1}</span>
+                                        <button onclick="changeBlock('${key}', 1)" ${isLast ? 'disabled' : ''} class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 disabled:opacity-30 disabled:hover:bg-transparent transition"><i class="fa-solid fa-chevron-right text-[10px]"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] text-zinc-500 font-bold uppercase mb-1 tracking-wider">Hiệu suất</div>
+                                <div class="flex items-center gap-2 justify-end">
+                                    <span class="text-zinc-700 dark:text-zinc-300 font-mono font-bold">${wr}%</span>
+                                    <span class="text-xs ${pColor} font-mono font-bold bg-zinc-100 dark:bg-zinc-900/50 px-2 py-1 rounded border border-zinc-200 dark:border-zinc-800 shadow-sm">${totalPips > 0 ? '+' : ''}${totalPips.toFixed(1)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2.5 mb-2">${htmlBoxes}</div>
+                        <div class="mt-auto pt-4 text-[10px] text-right text-teal-400 dark:text-cyan-500 font-bold uppercase tracking-wider border-t border-zinc-200 dark:border-zinc-800/20">
+                             Tổng: ${allTrades.length} lệnh
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function changeBlock(key, dir) {
+            let current = blockState[key] || 0;
+            blockState[key] = current + dir;
+            renderGrid();
+        }
+
+        function openModal(trade) {
+            currentTrade = trade;
+            document.getElementById('m-pattern').innerText = trade.pattern;
+            document.getElementById('m-time').innerText = trade.time;
+            document.getElementById('m-money-badge').innerText = trade.money || "";
+            document.getElementById('m-dienbien').innerText = trade.dien_bien || "Không có nội dung.";
+            document.getElementById('m-baihoc').innerText = trade.bai_hoc || "Không có nội dung.";
+            
+            const rEl = document.getElementById('m-result');
+            const res = trade.calcRes;
+            rEl.innerText = res;
+            if(res === 'WIN') rEl.className = "text-2xl font-black font-mono text-green-600 dark:text-green-500 drop-shadow-sm";
+            else if(res === 'BE') rEl.className = "text-2xl font-black font-mono text-zinc-400";
+            else rEl.className = "text-2xl font-black font-mono text-red-600 dark:text-red-500 drop-shadow-sm";
+
+            const pips = parseFloat(trade.pips) || 0;
+            const pEl = document.getElementById('m-pips');
+            pEl.innerText = (pips > 0 ? '+' : '') + pips;
+            pEl.className = `text-2xl font-black font-mono ${pips>0 ? 'text-green-600 dark:text-green-500' : (pips<0?'text-red-600 dark:text-red-500':'text-zinc-400')}`;
+
+            switchImage('entry');
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
+
+        function switchImage(type) {
+            document.querySelectorAll('#detailModal .img-tab-active').forEach(btn => btn.className = "img-tab");
+            const activeBtn = document.getElementById('tab-' + type);
+            if(activeBtn) activeBtn.className = "img-tab-active";
+
+            let src = "";
+            if(type === 'd1') src = currentTrade.imgD1;
+            if(type === 'h4') src = currentTrade.imgH4;
+            if(type === 'h1') src = currentTrade.imgH1;
+            if(type === 'm15') src = currentTrade.imgM15;
+            if(type === 'entry') src = currentTrade.imgEntry;
+
+            const imgEl = document.getElementById('m-display-img');
+            const noImgEl = document.getElementById('m-no-img');
+            const linkEl = document.getElementById('m-link-img');
+
+            if(src && src.length > 5) { imgEl.src = src; imgEl.classList.remove('hidden'); noImgEl.classList.add('hidden'); linkEl.href = src; linkEl.classList.remove('hidden'); } 
+            else { imgEl.classList.add('hidden'); noImgEl.classList.remove('hidden'); linkEl.classList.add('hidden'); }
+        }
+    </script>
+</body>
+</html>
