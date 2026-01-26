@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công Cụ Tính % (Auto Save)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            width: 90%;
+            max-width: 400px;
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        h2 { text-align: center; margin-top: 0; color: #4a4a4a; font-weight: 700; }
+        
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 14px; color: #666; margin-bottom: 8px; font-weight: 600; }
+        .input-group input {
+            width: 100%; padding: 15px; border: 2px solid #e0e0e0;
+            border-radius: 12px; font-size: 16px; font-family: 'Poppins', sans-serif;
+            transition: all 0.3s; background: #f9f9f9;
+        }
+        .input-group input:focus {
+            border-color: #667eea; background: #fff; outline: none;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .result-container { margin-top: 30px; text-align: center; opacity: 0.5; transition: opacity 0.3s; }
+        .percentage-display { font-size: 48px; font-weight: 800; color: #333; margin-bottom: 5px; }
+        .progress-track {
+            height: 10px; background: #e0e0e0; border-radius: 10px;
+            margin: 15px 0; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; width: 0%; background: #4cd964; border-radius: 10px;
+            transition: width 0.5s ease, background 0.3s;
+        }
+
+        .suggestion-box {
+            background: #fff5f5; border-left: 5px solid #fc8181;
+            padding: 15px; border-radius: 8px; text-align: left;
+            margin-top: 20px; display: none; animation: slideDown 0.4s ease;
+        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .suggestion-number { display: block; font-size: 20px; font-weight: 700; color: #e53e3e; margin-top: 5px; }
+
+        /* Nút xóa dữ liệu */
+        .btn-reset {
+            background: none; border: none; color: #999;
+            font-size: 13px; cursor: pointer; text-decoration: underline;
+            margin-top: 15px; display: block; width: 100%; text-align: center;
+        }
+        .btn-reset:hover { color: #555; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Công Cụ Tính %</h2>
+        
+        <div class="input-group">
+            <label>Giá trị (Max)</label>
+            <input type="number" id="val" placeholder="Nhập số..." oninput="calculate()">
+        </div>
+
+        <div class="input-group">
+            <label>Tổng hiện tại</label>
+            <input type="number" id="total" placeholder="Nhập số..." oninput="calculate()">
+        </div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="percentage-display" id="percentNum">0%</div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <div style="font-size: 14px; font-weight: 600;" id="statusText">Chưa có dữ liệu</div>
+
+            <div class="suggestion-box" id="suggestionBox">
+                <div style="font-size: 13px; color: #c53030;">CẢNH BÁO: Tỉ lệ cao (>=40%)</div>
+                <div style="font-size: 13px; color: #c53030;">Để an toàn, Tổng cần tăng lên:</div>
+                <span class="suggestion-number" id="suggestNum">---</span>
+            </div>
+        </div>
+        
+        <button class="btn-reset" onclick="resetData()">Xóa dữ liệu & Làm mới</button>
+    </div>
+
+    <script>
+        // --- 1. HÀM CHẠY KHI MỞ TRANG ---
+        // Tự động lấy dữ liệu cũ ra điền vào
+        window.onload = function() {
+            const savedVal = localStorage.getItem('myApp_val');
+            const savedTotal = localStorage.getItem('myApp_total');
+
+            if (savedVal !== null) document.getElementById('val').value = savedVal;
+            if (savedTotal !== null) document.getElementById('total').value = savedTotal;
+
+            // Gọi hàm tính toán ngay lập tức để hiện kết quả cũ
+            if (savedVal || savedTotal) {
+                calculate();
+            }
+        };
+
+        // --- 2. HÀM TÍNH TOÁN & LƯU ---
+        function calculate() {
+            const valInput = document.getElementById('val');
+            const totalInput = document.getElementById('total');
+            const resultContainer = document.getElementById('resultContainer');
+            const percentNum = document.getElementById('percentNum');
+            const progressBar = document.getElementById('progressBar');
+            const statusText = document.getElementById('statusText');
+            const suggestionBox = document.getElementById('suggestionBox');
+            const suggestNum = document.getElementById('suggestNum');
+
+            // >> LƯU DỮ LIỆU NGAY KHI NHẬP <<
+            localStorage.setItem('myApp_val', valInput.value);
+            localStorage.setItem('myApp_total', totalInput.value);
+
+            const val = parseFloat(valInput.value);
+            const total = parseFloat(totalInput.value);
+
+            if (isNaN(val) || isNaN(total) || total === 0) {
+                resultContainer.style.opacity = "0.5";
+                percentNum.innerText = "0%";
+                progressBar.style.width = "0%";
+                statusText.innerText = "Chưa có dữ liệu";
+                suggestionBox.style.display = "none";
+                return;
+            }
+
+            resultContainer.style.opacity = "1";
+            let percent = (val / total) * 100;
+            percentNum.innerText = percent.toFixed(1) + "%";
+            
+            let barWidth = percent > 100 ? 100 : percent;
+            progressBar.style.width = barWidth + "%";
+
+            if (percent < 40) {
+                percentNum.style.color = "#38a169";
+                progressBar.style.background = "#38a169";
+                statusText.innerText = "✅ Tỉ lệ An toàn";
+                statusText.style.color = "#38a169";
+                suggestionBox.style.display = "none";
+            } else {
+                percentNum.style.color = "#e53e3e";
+                progressBar.style.background = "#e53e3e";
+                statusText.innerText = "⚠️ Cảnh báo vượt mức";
+                statusText.style.color = "#e53e3e";
+                
+                let limit = val / 0.4;
+                let safeTotal = Math.floor(limit) + 1;
+                suggestionBox.style.display = "block";
+                suggestNum.innerText = safeTotal;
+            }
+        }
+
+        // --- 3. HÀM XÓA DỮ LIỆU ---
+        function resetData() {
+            // Xóa ô nhập
+            document.getElementById('val').value = '';
+            document.getElementById('total').value = '';
+            // Xóa trong bộ nhớ
+            localStorage.removeItem('myApp_val');
+            localStorage.removeItem('myApp_total');
+            // Tính lại (để về 0)
+            calculate();
+        }
+    </script>
+</body>
+</html>
